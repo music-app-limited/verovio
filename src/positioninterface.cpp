@@ -9,12 +9,13 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
 #include "layer.h"
 #include "pitchinterface.h"
+#include "staff.h"
 
 namespace vrv {
 
@@ -24,23 +25,23 @@ namespace vrv {
 
 PositionInterface::PositionInterface() : Interface(), AttStaffLoc(), AttStaffLocPitched()
 {
-    RegisterInterfaceAttClass(ATT_STAFFLOC);
-    RegisterInterfaceAttClass(ATT_STAFFLOCPITCHED);
+    this->RegisterInterfaceAttClass(ATT_STAFFLOC);
+    this->RegisterInterfaceAttClass(ATT_STAFFLOCPITCHED);
 
-    Reset();
+    this->Reset();
 }
 
 PositionInterface::~PositionInterface() {}
 
 void PositionInterface::Reset()
 {
-    ResetStaffLoc();
-    ResetStaffLocPitched();
+    this->ResetStaffLoc();
+    this->ResetStaffLocPitched();
 
     m_drawingLoc = 0;
 }
 
-bool PositionInterface::HasIdenticalPositionInterface(PositionInterface *otherPositionInterface)
+bool PositionInterface::HasIdenticalPositionInterface(const PositionInterface *otherPositionInterface) const
 {
     if (!otherPositionInterface) {
         return false;
@@ -57,7 +58,7 @@ bool PositionInterface::HasIdenticalPositionInterface(PositionInterface *otherPo
     return true;
 }
 
-int PositionInterface::CalcDrawingLoc(Layer *layer, LayerElement *element)
+int PositionInterface::CalcDrawingLoc(const Layer *layer, const LayerElement *element)
 {
     assert(layer);
 
@@ -71,18 +72,34 @@ int PositionInterface::CalcDrawingLoc(Layer *layer, LayerElement *element)
     return m_drawingLoc;
 }
 
+bool PositionInterface::HasLedgerLines(int &linesAbove, int &linesBelow, const Staff *staff) const
+{
+    if (!staff) return false;
+
+    linesAbove = (this->GetDrawingLoc() - staff->m_drawingLines * 2 + 2) / 2;
+    linesBelow = -(this->GetDrawingLoc()) / 2;
+
+    linesAbove = std::max(linesAbove, 0);
+    linesBelow = std::max(linesBelow, 0);
+
+    return ((linesAbove > 0) || (linesBelow > 0));
+
+    return false;
+}
+
 //----------------------------------------------------------------------------
 // Interface pseudo functor (redirected)
 //----------------------------------------------------------------------------
 
-int PositionInterface::InterfaceResetDrawing(FunctorParams *functorParams, Object *object)
+FunctorCode PositionInterface::InterfaceResetData(ResetDataFunctor &functor, Object *object)
 {
     m_drawingLoc = 0;
 
     return FUNCTOR_CONTINUE;
 }
 
-int PositionInterface::InterfaceResetHorizontalAlignment(FunctorParams *functorParams, Object *object)
+FunctorCode PositionInterface::InterfaceResetHorizontalAlignment(
+    ResetHorizontalAlignmentFunctor &functor, Object *object)
 {
     m_drawingLoc = 0;
 

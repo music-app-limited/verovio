@@ -9,12 +9,12 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
 #include "comparison.h"
-#include "object.h"
+#include "functor.h"
 #include "surface.h"
 #include "vrv.h"
 #include "zone.h"
@@ -24,8 +24,13 @@ namespace vrv {
 //----------------------------------------------------------------------------
 // Facsimile
 //----------------------------------------------------------------------------
-Facsimile::Facsimile() : Object("facsimile-") {}
+
+static const ClassRegistrar<Facsimile> s_factory("facsimile", FACSIMILE);
+
+Facsimile::Facsimile() : Object(FACSIMILE, "facsimile-"), AttTyped() {}
+
 Facsimile::~Facsimile() {}
+
 void Facsimile::Reset() {}
 
 bool Facsimile::IsSupportedChild(Object *object)
@@ -40,39 +45,64 @@ bool Facsimile::IsSupportedChild(Object *object)
     return true;
 }
 
-Zone *Facsimile::FindZoneByUuid(std::string zoneId)
+Zone *Facsimile::FindZoneByID(const std::string &zoneId)
 {
-    return dynamic_cast<Zone *>(this->FindDescendantByUuid(zoneId));
+    return dynamic_cast<Zone *>(this->FindDescendantByID(zoneId));
 }
 
-int Facsimile::GetMaxX()
+const Zone *Facsimile::FindZoneByID(const std::string &zoneId) const
 {
-    ClassIdComparison ac(SURFACE);
-    ListOfObjects surfaces;
-    this->FindAllDescendantByComparison(&surfaces, &ac);
+    return dynamic_cast<const Zone *>(this->FindDescendantByID(zoneId));
+}
+
+int Facsimile::GetMaxX() const
+{
+    ListOfConstObjects surfaces = this->FindAllDescendantsByType(SURFACE);
 
     int max = 0;
-    for (auto iter = surfaces.begin(); iter != surfaces.end(); ++iter) {
-        Surface *surface = vrv_cast<Surface *>(*iter);
+    for (const Object *object : surfaces) {
+        const Surface *surface = vrv_cast<const Surface *>(object);
         assert(surface);
         max = (surface->GetMaxX() > max) ? surface->GetMaxX() : max;
     }
     return max;
 }
 
-int Facsimile::GetMaxY()
+int Facsimile::GetMaxY() const
 {
-    ClassIdComparison ac(SURFACE);
-    ListOfObjects surfaces;
-    this->FindAllDescendantByComparison(&surfaces, &ac);
+    ListOfConstObjects surfaces = this->FindAllDescendantsByType(SURFACE);
 
     int max = 0;
-    for (auto iter = surfaces.begin(); iter != surfaces.end(); ++iter) {
-        Surface *surface = vrv_cast<Surface *>(*iter);
+    for (const Object *object : surfaces) {
+        const Surface *surface = vrv_cast<const Surface *>(object);
         assert(surface);
         max = (surface->GetMaxY() > max) ? surface->GetMaxY() : max;
     }
     return max;
+}
+
+//----------------------------------------------------------------------------
+// Functor methods
+//----------------------------------------------------------------------------
+
+FunctorCode Facsimile::Accept(Functor &functor)
+{
+    return functor.VisitFacsimile(this);
+}
+
+FunctorCode Facsimile::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitFacsimile(this);
+}
+
+FunctorCode Facsimile::AcceptEnd(Functor &functor)
+{
+    return functor.VisitFacsimileEnd(this);
+}
+
+FunctorCode Facsimile::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitFacsimileEnd(this);
 }
 
 } // namespace vrv

@@ -86,8 +86,9 @@ public:
      * @name Drawing methods
      */
     ///@{
-    void DrawSimpleBezierPath(vrv::Point bezier[4]) override;
-    void DrawComplexBezierPath(vrv::Point bezier1[4], vrv::Point bezier2[4]) override;
+    void DrawQuadBezierPath(vrv::Point bezier[3]) override;
+    void DrawCubicBezierPath(vrv::Point bezier[4]) override;
+    void DrawCubicBezierPathFilled(vrv::Point bezier1[4], vrv::Point bezier2[4]) override;
     void DrawCircle(int x, int y, int radius) override;
     void DrawEllipse(int x, int y, int width, int height) override;
     void DrawEllipticArc(int x, int y, int width, int height, double start, double end) override;
@@ -195,8 +196,8 @@ private:
     float m_dpi{ 0 };
 
     // datastructures for mapping object ids to graphical items
-    QMap<QString, QList<QSGGeometryNode *> > m_id2NodeMapping;
-    QMap<QString, QList<TextQuickItem *> > m_id2QuickItemMapping;
+    QMap<QString, QList<QSGGeometryNode *>> m_id2NodeMapping;
+    QMap<QString, QList<TextQuickItem *>> m_id2QuickItemMapping;
 };
 } // namespace vrvQt
 

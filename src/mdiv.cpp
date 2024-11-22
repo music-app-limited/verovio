@@ -9,10 +9,13 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
+#include "functor.h"
+#include "iomei.h"
+#include "page.h"
 #include "pages.h"
 #include "score.h"
 #include "vrv.h"
@@ -23,12 +26,14 @@ namespace vrv {
 // Mdiv
 //----------------------------------------------------------------------------
 
-Mdiv::Mdiv() : Object("mdiv-"), AttLabelled(), AttNNumberLike()
-{
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_NNUMBERLIKE);
+static const ClassRegistrar<Mdiv> s_factory("mdiv", MDIV);
 
-    Reset();
+Mdiv::Mdiv() : PageElement(MDIV, "mdiv-"), PageMilestoneInterface(), AttLabelled(), AttNNumberLike()
+{
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_NNUMBERLIKE);
+
+    this->Reset();
 }
 
 Mdiv::~Mdiv() {}
@@ -36,8 +41,8 @@ Mdiv::~Mdiv() {}
 void Mdiv::Reset()
 {
     Object::Reset();
-    ResetLabelled();
-    ResetNNumberLike();
+    this->ResetLabelled();
+    this->ResetNNumberLike();
 
     m_visibility = Hidden;
 }
@@ -46,9 +51,6 @@ bool Mdiv::IsSupportedChild(Object *child)
 {
     if (child->Is(MDIV)) {
         assert(dynamic_cast<Mdiv *>(child));
-    }
-    else if (child->Is(PAGES)) {
-        assert(dynamic_cast<Pages *>(child));
     }
     else if (child->Is(SCORE)) {
         assert(dynamic_cast<Score *>(child));
@@ -62,8 +64,8 @@ bool Mdiv::IsSupportedChild(Object *child)
 void Mdiv::MakeVisible()
 {
     m_visibility = Visible;
-    if (GetParent() && GetParent()->Is(MDIV)) {
-        Mdiv *parent = vrv_cast<Mdiv *>(GetParent());
+    if (this->GetParent() && this->GetParent()->Is(MDIV)) {
+        Mdiv *parent = vrv_cast<Mdiv *>(this->GetParent());
         assert(parent);
         parent->MakeVisible();
     }
@@ -72,5 +74,25 @@ void Mdiv::MakeVisible()
 //----------------------------------------------------------------------------
 // Functor methods
 //----------------------------------------------------------------------------
+
+FunctorCode Mdiv::Accept(Functor &functor)
+{
+    return functor.VisitMdiv(this);
+}
+
+FunctorCode Mdiv::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitMdiv(this);
+}
+
+FunctorCode Mdiv::AcceptEnd(Functor &functor)
+{
+    return functor.VisitMdivEnd(this);
+}
+
+FunctorCode Mdiv::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitMdivEnd(this);
+}
 
 } // namespace vrv

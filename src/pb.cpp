@@ -9,13 +9,13 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
 #include "doc.h"
 #include "editorial.h"
-#include "functorparams.h"
+#include "functor.h"
 #include "page.h"
 #include "pages.h"
 #include "system.h"
@@ -27,11 +27,14 @@ namespace vrv {
 // Pb
 //----------------------------------------------------------------------------
 
-Pb::Pb() : SystemElement("pb-"), AttNNumberLike()
-{
-    RegisterAttClass(ATT_NNUMBERLIKE);
+static const ClassRegistrar<Pb> s_factory("pb", PB);
 
-    Reset();
+Pb::Pb() : SystemElement(PB, "pb-"), FacsimileInterface(), AttNNumberLike()
+{
+    this->RegisterAttClass(ATT_NNUMBERLIKE);
+    this->RegisterInterface(FacsimileInterface::GetAttClasses(), FacsimileInterface::IsInterface());
+
+    this->Reset();
 }
 
 Pb::~Pb() {}
@@ -39,34 +42,32 @@ Pb::~Pb() {}
 void Pb::Reset()
 {
     SystemElement::Reset();
-    ResetNNumberLike();
+    FacsimileInterface::Reset();
+    this->ResetNNumberLike();
 }
 
 //----------------------------------------------------------------------------
 // Pb functor methods
 //----------------------------------------------------------------------------
 
-int Pb::CastOffEncoding(FunctorParams *functorParams)
+FunctorCode Pb::Accept(Functor &functor)
 {
-    CastOffEncodingParams *params = vrv_params_cast<CastOffEncodingParams *>(functorParams);
-    assert(params);
+    return functor.VisitPb(this);
+}
 
-    // We look if the current system has a least one measure - if yes, we assume that the <pb>
-    // is not the one at the beginning of the content. This is not very robust but at least make it
-    // work when rendering a <mdiv> that does not start with a <pb> (which we cannot force)
-    if (params->m_currentSystem->GetChildCount(MEASURE) > 0) {
-        if (params->m_usePages) {
-            params->m_currentPage = new Page();
-            assert(params->m_doc->GetPages());
-            params->m_doc->GetPages()->AddChild(params->m_currentPage);
-        }
-        params->m_currentSystem = new System();
-        params->m_currentPage->AddChild(params->m_currentSystem);
-    }
+FunctorCode Pb::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitPb(this);
+}
 
-    MoveItselfTo(params->m_currentSystem);
+FunctorCode Pb::AcceptEnd(Functor &functor)
+{
+    return functor.VisitPbEnd(this);
+}
 
-    return FUNCTOR_SIBLINGS;
+FunctorCode Pb::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitPbEnd(this);
 }
 
 } // namespace vrv

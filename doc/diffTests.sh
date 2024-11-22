@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # This script need to be run from ./doc in the branch with the changes
 # add parameter true to rebuild the develop (reference) branch and tests
@@ -13,9 +13,11 @@ indir2="/Users/laurent/tmp/test-output-pr"
 outdir="/Users/laurent/tmp/test-output-diff"
 # The path to the directory containing the develop branch - used only for rebuilding
 devdir="/Users/laurent/projects/verovio_lpugin"
+# The path to the file containing the shortlist - file can be empty but must be there
+shortlist="/Users/laurent/tmp/shortlist.txt"
 
 # The version of python we want to use (we can be more specific here, e.g., python3.8)
-PYTHON=python3.9
+PYTHON=python3
 
 # Store the path where we are
 home=`pwd`
@@ -28,8 +30,10 @@ then
     echo "Emptying directories ..."
     rm $indir1/*/*.png
     rm $indir1/*/*.svg
+    rm $indir1/*/*.json
     rm $indir2/*/*.png
     rm $indir2/*/*.svg
+    rm $indir2/*/*.json
     rm $outdir/*/*.png
     rm $outdir/index.html
 fi
@@ -40,7 +44,7 @@ if [ ! -z $build_dev ]; then
     cd $devdir
     git pull
     cd bindings
-    cmake ../cmake -B python -DBUILD_AS_PYTHON=ON -DNO_HUMDRUM_SUPPORT=ON
+    cmake ../cmake -B python -DBUILD_AS_PYTHON=ON -DNO_HUMDRUM_SUPPORT=ON -DVRV_DYNAMIC_CAST=ON
     cd python
     make -j8
 
@@ -50,11 +54,11 @@ if [ ! -z $build_dev ]; then
 fi
 
 cd ../bindings
-cmake ../cmake -B python -DBUILD_AS_PYTHON=ON -DNO_HUMDRUM_SUPPORT=ON
+cmake ../cmake -B python -DBUILD_AS_PYTHON=ON -DNO_HUMDRUM_SUPPORT=ON -DVRV_DYNAMIC_CAST=ON
 cd python
 make -j8
 
-$PYTHON ../../doc/test-suite.py "$testdir" "$indir2"
+$PYTHON ../../doc/test-suite.py "$testdir" "$indir2" --shortlist "$shortlist"
 
 $PYTHON ../../doc/test-suite-diff.py "$indir2" "$indir1" "$outdir"
 

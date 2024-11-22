@@ -9,12 +9,14 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
+#include "doc.h"
 #include "editorial.h"
-#include "functorparams.h"
+#include "functor.h"
+#include "measure.h"
 #include "page.h"
 #include "system.h"
 #include "vrv.h"
@@ -25,11 +27,14 @@ namespace vrv {
 // Sb
 //----------------------------------------------------------------------------
 
-Sb::Sb() : SystemElement("sb-"), AttNNumberLike()
-{
-    RegisterAttClass(ATT_NNUMBERLIKE);
+static const ClassRegistrar<Sb> s_factory("sb", SB);
 
-    Reset();
+Sb::Sb() : SystemElement(SB, "sb-"), FacsimileInterface(), AttNNumberLike()
+{
+    this->RegisterAttClass(ATT_NNUMBERLIKE);
+    this->RegisterInterface(FacsimileInterface::GetAttClasses(), FacsimileInterface::IsInterface());
+
+    this->Reset();
 }
 
 Sb::~Sb() {}
@@ -37,24 +42,32 @@ Sb::~Sb() {}
 void Sb::Reset()
 {
     SystemElement::Reset();
-    ResetNNumberLike();
+    FacsimileInterface::Reset();
+    this->ResetNNumberLike();
 }
 
 //----------------------------------------------------------------------------
 // Sb functor methods
 //----------------------------------------------------------------------------
 
-int Sb::CastOffEncoding(FunctorParams *functorParams)
+FunctorCode Sb::Accept(Functor &functor)
 {
-    CastOffEncodingParams *params = vrv_params_cast<CastOffEncodingParams *>(functorParams);
-    assert(params);
+    return functor.VisitSb(this);
+}
 
-    params->m_currentSystem = new System();
-    params->m_currentPage->AddChild(params->m_currentSystem);
+FunctorCode Sb::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitSb(this);
+}
 
-    MoveItselfTo(params->m_currentSystem);
+FunctorCode Sb::AcceptEnd(Functor &functor)
+{
+    return functor.VisitSbEnd(this);
+}
 
-    return FUNCTOR_SIBLINGS;
+FunctorCode Sb::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitSbEnd(this);
 }
 
 } // namespace vrv

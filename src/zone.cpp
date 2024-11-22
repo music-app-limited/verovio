@@ -9,12 +9,12 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
 #include "comparison.h"
-#include "object.h"
+#include "functor.h"
 #include "vrv.h"
 
 namespace vrv {
@@ -22,17 +22,24 @@ namespace vrv {
 //----------------------------------------------------------------------------
 // Zone
 //----------------------------------------------------------------------------
-Zone::Zone() : Object("zone-"), AttTyped(), AttCoordinated()
+
+static const ClassRegistrar<Zone> s_factory("zone", ZONE);
+
+Zone::Zone() : Object(ZONE, "zone-"), AttTyped(), AttCoordinated()
 {
-    RegisterAttClass(ATT_TYPED);
-    RegisterAttClass(ATT_COORDINATED);
-    Reset();
+    this->RegisterAttClass(ATT_TYPED);
+    this->RegisterAttClass(ATT_COORDINATED);
+    this->RegisterAttClass(ATT_COORDINATEDUL);
+    this->Reset();
 }
+
 Zone::~Zone() {}
+
 void Zone::Reset()
 {
-    ResetTyped();
-    ResetCoordinated();
+    this->ResetTyped();
+    this->ResetCoordinated();
+    this->ResetCoordinatedUl();
 }
 
 void Zone::ShiftByXY(int xDiff, int yDiff)
@@ -43,14 +50,38 @@ void Zone::ShiftByXY(int xDiff, int yDiff)
     this->SetLry(this->GetLry() + yDiff);
 }
 
-int Zone::GetLogicalUly()
+int Zone::GetLogicalUly() const
 {
     return (this->GetUly());
 }
 
-int Zone::GetLogicalLry()
+int Zone::GetLogicalLry() const
 {
     return (this->GetLry());
+}
+
+//----------------------------------------------------------------------------
+// Functor methods
+//----------------------------------------------------------------------------
+
+FunctorCode Zone::Accept(Functor &functor)
+{
+    return functor.VisitZone(this);
+}
+
+FunctorCode Zone::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitZone(this);
+}
+
+FunctorCode Zone::AcceptEnd(Functor &functor)
+{
+    return functor.VisitZoneEnd(this);
+}
+
+FunctorCode Zone::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitZoneEnd(this);
 }
 
 } // namespace vrv

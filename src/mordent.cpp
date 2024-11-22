@@ -9,11 +9,13 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
+#include "functor.h"
 #include "horizontalaligner.h"
+#include "resources.h"
 #include "smufl.h"
 
 namespace vrv {
@@ -22,23 +24,27 @@ namespace vrv {
 // Mordent
 //----------------------------------------------------------------------------
 
+static const ClassRegistrar<Mordent> s_factory("mordent", MORDENT);
+
 Mordent::Mordent()
-    : ControlElement("mordent-")
+    : ControlElement(MORDENT, "mordent-")
     , TimePointInterface()
     , AttColor()
-    , AttExtSym()
+    , AttExtSymAuth()
+    , AttExtSymNames()
     , AttOrnamentAccid()
-    , AttPlacement()
+    , AttPlacementRelStaff()
     , AttMordentLog()
 {
-    RegisterInterface(TimePointInterface::GetAttClasses(), TimePointInterface::IsInterface());
-    RegisterAttClass(ATT_COLOR);
-    RegisterAttClass(ATT_EXTSYM);
-    RegisterAttClass(ATT_ORNAMENTACCID);
-    RegisterAttClass(ATT_PLACEMENT);
-    RegisterAttClass(ATT_MORDENTLOG);
+    this->RegisterInterface(TimePointInterface::GetAttClasses(), TimePointInterface::IsInterface());
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_EXTSYMAUTH);
+    this->RegisterAttClass(ATT_EXTSYMNAMES);
+    this->RegisterAttClass(ATT_ORNAMENTACCID);
+    this->RegisterAttClass(ATT_PLACEMENTRELSTAFF);
+    this->RegisterAttClass(ATT_MORDENTLOG);
 
-    Reset();
+    this->Reset();
 }
 
 Mordent::~Mordent() {}
@@ -47,31 +53,60 @@ void Mordent::Reset()
 {
     ControlElement::Reset();
     TimePointInterface::Reset();
-    ResetColor();
-    ResetExtSym();
-    ResetOrnamentAccid();
-    ResetPlacement();
-    ResetMordentLog();
+    this->ResetColor();
+    this->ResetExtSymAuth();
+    this->ResetExtSymNames();
+    this->ResetOrnamentAccid();
+    this->ResetPlacementRelStaff();
+    this->ResetMordentLog();
 }
 
-wchar_t Mordent::GetMordentGlyph() const
+char32_t Mordent::GetMordentGlyph() const
 {
-    // If there is glyph.num, prioritize it, otherwise check other attributes
-    if (HasGlyphNum()) {
-        wchar_t code = GetGlyphNum();
-        if (NULL != Resources::GetGlyph(code)) return code;
+    const Resources *resources = this->GetDocResources();
+    if (!resources) return 0;
+
+    // If there is glyph.num, prioritize it
+    if (this->HasGlyphNum()) {
+        char32_t code = this->GetGlyphNum();
+        if (NULL != resources->GetGlyph(code)) return code;
+    }
+    // If there is glyph.name (second priority)
+    else if (this->HasGlyphName()) {
+        char32_t code = resources->GetGlyphCode(this->GetGlyphName());
+        if (NULL != resources->GetGlyph(code)) return code;
     }
 
     // Handle glyph based on other attributes
-    if (GetLong() == BOOLEAN_true) {
-        return GetForm() == mordentLog_FORM_upper ? SMUFL_E56E_ornamentTremblement
-                                                  : SMUFL_E5BD_ornamentPrecompTrillWithMordent;
+    if (this->GetLong() == BOOLEAN_true) {
+        return this->GetForm() == mordentLog_FORM_upper ? SMUFL_E56E_ornamentTremblement
+                                                        : SMUFL_E5BD_ornamentPrecompTrillWithMordent;
     }
-    return GetForm() == mordentLog_FORM_upper ? SMUFL_E56C_ornamentMordent : SMUFL_E56D_ornamentMordentInverted;
+    return this->GetForm() == mordentLog_FORM_upper ? SMUFL_E56C_ornamentShortTrill : SMUFL_E56D_ornamentMordent;
 }
 
 //----------------------------------------------------------------------------
 // Mordent functor methods
 //----------------------------------------------------------------------------
+
+FunctorCode Mordent::Accept(Functor &functor)
+{
+    return functor.VisitMordent(this);
+}
+
+FunctorCode Mordent::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitMordent(this);
+}
+
+FunctorCode Mordent::AcceptEnd(Functor &functor)
+{
+    return functor.VisitMordentEnd(this);
+}
+
+FunctorCode Mordent::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitMordentEnd(this);
+}
 
 } // namespace vrv

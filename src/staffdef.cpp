@@ -9,15 +9,18 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
-#include "functorparams.h"
+#include "functor.h"
 #include "instrdef.h"
 #include "label.h"
 #include "labelabbr.h"
+#include "layerdef.h"
+#include "metersiggrp.h"
 #include "staffgrp.h"
+#include "tuning.h"
 #include "vrv.h"
 
 namespace vrv {
@@ -26,8 +29,10 @@ namespace vrv {
 // StaffDef
 //----------------------------------------------------------------------------
 
+static const ClassRegistrar<StaffDef> s_factory("staffDef", STAFFDEF);
+
 StaffDef::StaffDef()
-    : ScoreDefElement("staffdef-")
+    : ScoreDefElement(STAFFDEF, "staffdef-")
     , AttDistances()
     , AttLabelled()
     , AttNInteger()
@@ -38,17 +43,17 @@ StaffDef::StaffDef()
     , AttTimeBase()
     , AttTransposition()
 {
-    RegisterAttClass(ATT_DISTANCES);
-    RegisterAttClass(ATT_LABELLED);
-    RegisterAttClass(ATT_NINTEGER);
-    RegisterAttClass(ATT_NOTATIONTYPE);
-    RegisterAttClass(ATT_SCALABLE);
-    RegisterAttClass(ATT_STAFFDEFLOG);
-    RegisterAttClass(ATT_STAFFDEFVIS);
-    RegisterAttClass(ATT_TIMEBASE);
-    RegisterAttClass(ATT_TRANSPOSITION);
+    this->RegisterAttClass(ATT_DISTANCES);
+    this->RegisterAttClass(ATT_LABELLED);
+    this->RegisterAttClass(ATT_NINTEGER);
+    this->RegisterAttClass(ATT_NOTATIONTYPE);
+    this->RegisterAttClass(ATT_SCALABLE);
+    this->RegisterAttClass(ATT_STAFFDEFLOG);
+    this->RegisterAttClass(ATT_STAFFDEFVIS);
+    this->RegisterAttClass(ATT_TIMEBASE);
+    this->RegisterAttClass(ATT_TRANSPOSITION);
 
-    Reset();
+    this->Reset();
 }
 
 StaffDef::~StaffDef() {}
@@ -57,15 +62,15 @@ void StaffDef::Reset()
 {
     ScoreDefElement::Reset();
     StaffDefDrawingInterface::Reset();
-    ResetDistances();
-    ResetLabelled();
-    ResetNInteger();
-    ResetNotationType();
-    ResetScalable();
-    ResetStaffDefLog();
-    ResetStaffDefVis();
-    ResetTimeBase();
-    ResetTransposition();
+    this->ResetDistances();
+    this->ResetLabelled();
+    this->ResetNInteger();
+    this->ResetNotationType();
+    this->ResetScalable();
+    this->ResetStaffDefLog();
+    this->ResetStaffDefVis();
+    this->ResetTimeBase();
+    this->ResetTransposition();
 
     m_drawingVisibility = OPTIMIZATION_NONE;
 }
@@ -87,11 +92,20 @@ bool StaffDef::IsSupportedChild(Object *child)
     else if (child->Is(LABELABBR)) {
         assert(dynamic_cast<LabelAbbr *>(child));
     }
+    else if (child->Is(LAYERDEF)) {
+        assert(dynamic_cast<LayerDef *>(child));
+    }
     else if (child->Is(MENSUR)) {
         assert(dynamic_cast<Mensur *>(child));
     }
     else if (child->Is(METERSIG)) {
         assert(dynamic_cast<MeterSig *>(child));
+    }
+    else if (child->Is(METERSIGGRP)) {
+        assert(dynamic_cast<MeterSigGrp *>(child));
+    }
+    else if (child->Is(TUNING)) {
+        assert(dynamic_cast<Tuning *>(child));
     }
     else {
         return false;
@@ -99,51 +113,47 @@ bool StaffDef::IsSupportedChild(Object *child)
     return true;
 }
 
+int StaffDef::GetInsertOrderFor(ClassId classId) const
+{
+    // Anything else goes at the end
+    static const std::vector s_order({ LABEL, LABELABBR });
+    return this->GetInsertOrderForIn(classId, s_order);
+}
+
+bool StaffDef::HasLayerDefWithLabel() const
+{
+    // First get all the staffGrps
+    ListOfConstObjects layerDefs = this->FindAllDescendantsByType(LAYERDEF);
+
+    // Then the @n of each first staffDef
+    for (const Object *object : layerDefs) {
+        if (object->FindDescendantByType(LABEL)) return true;
+    }
+    return false;
+}
+
 //----------------------------------------------------------------------------
 // StaffDef functor methods
 //----------------------------------------------------------------------------
 
-int StaffDef::ReplaceDrawingValuesInStaffDef(FunctorParams *functorParams)
+FunctorCode StaffDef::Accept(Functor &functor)
 {
-    ReplaceDrawingValuesInStaffDefParams *params
-        = vrv_params_cast<ReplaceDrawingValuesInStaffDefParams *>(functorParams);
-    assert(params);
-
-    if (params->m_clef) {
-        this->SetCurrentClef(params->m_clef);
-    }
-    if (params->m_keySig) {
-        this->SetCurrentKeySig(params->m_keySig);
-    }
-    if (params->m_mensur) {
-        this->SetCurrentMensur(params->m_mensur);
-    }
-    if (params->m_meterSig) {
-        this->SetCurrentMeterSig(params->m_meterSig);
-    }
-
-    return FUNCTOR_CONTINUE;
+    return functor.VisitStaffDef(this);
 }
 
-int StaffDef::SetStaffDefRedrawFlags(FunctorParams *functorParams)
+FunctorCode StaffDef::Accept(ConstFunctor &functor) const
 {
-    SetStaffDefRedrawFlagsParams *params = vrv_params_cast<SetStaffDefRedrawFlagsParams *>(functorParams);
-    assert(params);
+    return functor.VisitStaffDef(this);
+}
 
-    if (params->m_clef || params->m_applyToAll) {
-        this->SetDrawClef(params->m_clef);
-    }
-    if (params->m_keySig || params->m_applyToAll) {
-        this->SetDrawKeySig(params->m_keySig);
-    }
-    if (params->m_mensur || params->m_applyToAll) {
-        this->SetDrawMensur(params->m_mensur);
-    }
-    if (params->m_meterSig || params->m_applyToAll) {
-        this->SetDrawMeterSig(params->m_meterSig);
-    }
+FunctorCode StaffDef::AcceptEnd(Functor &functor)
+{
+    return functor.VisitStaffDefEnd(this);
+}
 
-    return FUNCTOR_CONTINUE;
+FunctorCode StaffDef::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitStaffDefEnd(this);
 }
 
 } // namespace vrv

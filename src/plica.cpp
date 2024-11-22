@@ -9,10 +9,11 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
+#include "functor.h"
 #include "vrv.h"
 
 //----------------------------------------------------------------------------
@@ -23,11 +24,13 @@ namespace vrv {
 // Plica
 //----------------------------------------------------------------------------
 
-Plica::Plica() : LayerElement("plica-"), AttPlicaVis()
-{
-    RegisterAttClass(ATT_PLICAVIS);
+static const ClassRegistrar<Plica> s_factory("plica", PLICA);
 
-    Reset();
+Plica::Plica() : LayerElement(PLICA, "plica-"), AttPlicaVis()
+{
+    this->RegisterAttClass(ATT_PLICAVIS);
+
+    this->Reset();
 }
 
 Plica::~Plica() {}
@@ -35,11 +38,31 @@ Plica::~Plica() {}
 void Plica::Reset()
 {
     LayerElement::Reset();
-    ResetPlicaVis();
+    this->ResetPlicaVis();
 }
 
 //----------------------------------------------------------------------------
 // Functors methods
 //----------------------------------------------------------------------------
+
+FunctorCode Plica::Accept(Functor &functor)
+{
+    return functor.VisitPlica(this);
+}
+
+FunctorCode Plica::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitPlica(this);
+}
+
+FunctorCode Plica::AcceptEnd(Functor &functor)
+{
+    return functor.VisitPlicaEnd(this);
+}
+
+FunctorCode Plica::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitPlicaEnd(this);
+}
 
 } // namespace vrv

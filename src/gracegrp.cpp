@@ -9,17 +9,22 @@
 
 //----------------------------------------------------------------------------
 
-#include <assert.h>
+#include <cassert>
 
 //----------------------------------------------------------------------------
 
 #include "beam.h"
 #include "chord.h"
 #include "editorial.h"
+#include "functor.h"
 #include "note.h"
 #include "rest.h"
 #include "space.h"
 #include "vrv.h"
+
+//----------------------------------------------------------------------------
+
+#include "MidiFile.h"
 
 namespace vrv {
 
@@ -27,13 +32,15 @@ namespace vrv {
 // GraceGrp
 //----------------------------------------------------------------------------
 
-GraceGrp::GraceGrp() : LayerElement("gracegrp-"), AttColor(), AttGraced(), AttGraceGrpLog()
-{
-    RegisterAttClass(ATT_COLOR);
-    RegisterAttClass(ATT_GRACED);
-    RegisterAttClass(ATT_GRACEGRPLOG);
+static const ClassRegistrar<GraceGrp> s_factory("graceGrp", GRACEGRP);
 
-    Reset();
+GraceGrp::GraceGrp() : LayerElement(GRACEGRP, "gracegrp-"), AttColor(), AttGraced(), AttGraceGrpLog()
+{
+    this->RegisterAttClass(ATT_COLOR);
+    this->RegisterAttClass(ATT_GRACED);
+    this->RegisterAttClass(ATT_GRACEGRPLOG);
+
+    this->Reset();
 }
 
 GraceGrp::~GraceGrp() {}
@@ -41,9 +48,9 @@ GraceGrp::~GraceGrp() {}
 void GraceGrp::Reset()
 {
     LayerElement::Reset();
-    ResetColor();
-    ResetGraced();
-    ResetGraceGrpLog();
+    this->ResetColor();
+    this->ResetGraced();
+    this->ResetGraceGrpLog();
 }
 
 bool GraceGrp::IsSupportedChild(Object *child)
@@ -70,6 +77,26 @@ bool GraceGrp::IsSupportedChild(Object *child)
         return false;
     }
     return true;
+}
+
+FunctorCode GraceGrp::Accept(Functor &functor)
+{
+    return functor.VisitGraceGrp(this);
+}
+
+FunctorCode GraceGrp::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitGraceGrp(this);
+}
+
+FunctorCode GraceGrp::AcceptEnd(Functor &functor)
+{
+    return functor.VisitGraceGrpEnd(this);
+}
+
+FunctorCode GraceGrp::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitGraceGrpEnd(this);
 }
 
 } // namespace vrv

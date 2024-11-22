@@ -7,17 +7,23 @@
 
 #include "proport.h"
 
+//----------------------------------------------------------------------------
+
+#include "functor.h"
+
 namespace vrv {
 
 //----------------------------------------------------------------------------
 // Proport
 //----------------------------------------------------------------------------
 
-Proport::Proport() : LayerElement("prop-"), AttDurationRatio()
-{
-    RegisterAttClass(ATT_DURATIONRATIO);
+static const ClassRegistrar<Proport> s_factory("proport", PROPORT);
 
-    Reset();
+Proport::Proport() : LayerElement(PROPORT, "prop-"), AttDurationRatio()
+{
+    this->RegisterAttClass(ATT_DURATIONRATIO);
+
+    this->Reset();
 }
 
 Proport::~Proport() {}
@@ -25,7 +31,62 @@ Proport::~Proport() {}
 void Proport::Reset()
 {
     LayerElement::Reset();
-    ResetDurationRatio();
+    this->ResetDurationRatio();
+
+    m_cumulatedNum = VRV_UNSET;
+    m_cumulatedNumbase = VRV_UNSET;
+}
+
+int Proport::GetCumulatedNum() const
+{
+    return (m_cumulatedNum != VRV_UNSET) ? m_cumulatedNum : this->GetNum();
+}
+
+int Proport::GetCumulatedNumbase() const
+{
+    return (m_cumulatedNumbase != VRV_UNSET) ? m_cumulatedNumbase : this->GetNumbase();
+}
+
+void Proport::Cumulate(const Proport *proport)
+{
+    // Unset values are not cumulated
+    if (this->GetType() == "reset") return;
+
+    if (proport->HasNum() && this->HasNum()) {
+        m_cumulatedNum = this->GetNum() * proport->GetCumulatedNum();
+    }
+    if (proport->HasNumbase() && this->HasNumbase()) {
+        m_cumulatedNumbase = this->GetNumbase() * proport->GetCumulatedNumbase();
+    }
+    if ((m_cumulatedNum != VRV_UNSET) && (m_cumulatedNumbase != VRV_UNSET)) {
+        Fraction::Reduce(m_cumulatedNum, m_cumulatedNumbase);
+    }
+}
+
+void Proport::ResetCumulate()
+{
+    m_cumulatedNum = VRV_UNSET;
+    m_cumulatedNumbase = VRV_UNSET;
+}
+
+FunctorCode Proport::Accept(Functor &functor)
+{
+    return functor.VisitProport(this);
+}
+
+FunctorCode Proport::Accept(ConstFunctor &functor) const
+{
+    return functor.VisitProport(this);
+}
+
+FunctorCode Proport::AcceptEnd(Functor &functor)
+{
+    return functor.VisitProportEnd(this);
+}
+
+FunctorCode Proport::AcceptEnd(ConstFunctor &functor) const
+{
+    return functor.VisitProportEnd(this);
 }
 
 } // namespace vrv
