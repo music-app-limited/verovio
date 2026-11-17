@@ -159,7 +159,7 @@ void Measure::Reset()
     m_realTimeOnsetMilliseconds.clear();
     m_scoreTimeOffset.clear();
     m_realTimeOffsetMilliseconds.clear();
-    m_currentTempo = MIDI_TEMPO;
+    this->ResetTempo(MIDI_TEMPO);
 }
 
 bool Measure::IsSupportedChild(ClassId classId)
@@ -520,14 +520,46 @@ int Measure::EnclosesTime(int time) const
 {
     int repeat = 1;
     double timeDuration
-        = m_measureAligner.GetRightAlignment()->GetTime().ToDouble() * SCORE_TIME_UNIT * 60.0 / m_currentTempo * 1000.0
-        + 0.5;
+        = this->GetRealTimeSeconds(m_measureAligner.GetRightAlignment()->GetTime() * SCORE_TIME_UNIT) * 1000.0 + 0.5;
     std::vector<double>::const_iterator iter;
     for (iter = m_realTimeOnsetMilliseconds.begin(); iter != m_realTimeOnsetMilliseconds.end(); ++iter) {
         if ((time >= *iter) && (time <= *iter + timeDuration)) return repeat;
         repeat++;
     }
     return VRV_UNSET;
+}
+
+void Measure::ResetTempo(double tempo)
+{
+    m_tempoChanges.clear();
+    m_tempoChanges[Fraction(0)] = tempo;
+}
+
+double Measure::GetTempoAt(const Fraction &scoreTime) const
+{
+    assert(!m_tempoChanges.empty());
+
+    // The last tempo change at or before the score time
+    auto iter = m_tempoChanges.upper_bound(scoreTime);
+    if (iter != m_tempoChanges.begin()) --iter;
+    return iter->second;
+}
+
+double Measure::GetRealTimeSeconds(const Fraction &scoreTime) const
+{
+    assert(!m_tempoChanges.empty());
+
+    double seconds = 0.0;
+    Fraction segmentStart = m_tempoChanges.begin()->first;
+    double tempo = m_tempoChanges.begin()->second;
+    for (const auto &[changeTime, changeTempo] : m_tempoChanges) {
+        if (changeTime >= scoreTime) break;
+        seconds += (changeTime - segmentStart).ToDouble() * 60.0 / tempo;
+        segmentStart = changeTime;
+        tempo = changeTempo;
+    }
+    seconds += (scoreTime - segmentStart).ToDouble() * 60.0 / tempo;
+    return seconds;
 }
 
 Fraction Measure::GetScoreTimeOnset(int repeat) const

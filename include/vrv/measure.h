@@ -345,11 +345,17 @@ public:
     ///@}
 
     /**
-     * Setter and getter for the current tempo
+     * Setters and getters for the tempo map of the measure.
+     * The keys are score times in quarter notes from the start of the measure.
+     * ResetTempo removes all tempo changes and sets the tempo at the start of the measure.
+     * GetRealTimeSeconds returns the real time from the start of the measure to a score time.
      */
     ///@{
-    void SetCurrentTempo(double tempo) { m_currentTempo = tempo; }
-    double GetCurrentTempo() const { return m_currentTempo; }
+    void ResetTempo(double tempo);
+    void AddTempoChange(const Fraction &scoreTime, double tempo) { m_tempoChanges[scoreTime] = tempo; }
+    const std::map<Fraction, double> &GetTempoChanges() const { return m_tempoChanges; }
+    double GetTempoAt(const Fraction &scoreTime) const;
+    double GetRealTimeSeconds(const Fraction &scoreTime) const;
     ///@}
 
     /**
@@ -461,7 +467,11 @@ private:
     std::vector<double> m_realTimeOnsetMilliseconds;
     std::vector<Fraction> m_scoreTimeOffset;
     std::vector<double> m_realTimeOffsetMilliseconds;
-    double m_currentTempo;
+
+    /**
+     * The tempo map of the measure, with at least one entry at score time 0.
+     */
+    std::map<Fraction, double> m_tempoChanges;
 
     std::map<int, BarlineRenditionPair> m_invisibleStaffBarlines;
 };
