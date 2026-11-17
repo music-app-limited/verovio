@@ -62,20 +62,20 @@ public:
 protected:
     //
 private:
-    //
+    // Returns the real time in seconds from the start of the current measure to a score time
+    double GetRealTimeSeconds(const Fraction &scoreTime) const;
+
 public:
     //
 private:
     // The current score time in the measure (incremented by each element)
     Fraction m_currentScoreTime;
-    // The current real time in seconds in the measure (incremented by each element)
-    double m_currentRealTimeSeconds;
     // The current time alignment parameters
     AlignMeterParams m_meterParams;
     // The current notation type
     data_NOTATIONTYPE m_notationType;
-    // The current tempo
-    double m_currentTempo;
+    // The current measure, which holds the tempo map
+    const Measure *m_currentMeasure;
 };
 
 //----------------------------------------------------------------------------
@@ -134,6 +134,8 @@ private:
     double m_currentRealTimeSeconds;
     // The current tempo
     double m_currentTempo;
+    // The score time of the current tempo in the current measure
+    Fraction m_currentTempoScoreTime;
     // The tempo adjustment
     double m_tempoAdjustment;
     // The factor for multibar rests
@@ -242,6 +244,16 @@ private:
     void SetNoteOrChordStartStop(Note *note, const Fraction &startTime, const Fraction &stopTime = VRV_UNSET);
     void SetNoteStartStop(Note *note, const Fraction &startTime, const Fraction &stopTime = VRV_UNSET);
 
+    /**
+     * Return the score time duration of an unaccented grace note at a score time in the current measure
+     */
+    Fraction GetGraceNoteDuration(const Fraction &scoreTime) const;
+
+    /**
+     * Return the real time in seconds from the start of the current measure to a score time
+     */
+    double GetRealTimeSeconds(const Fraction &scoreTime) const;
+
 public:
     //
 private:
@@ -251,8 +263,8 @@ private:
     std::list<Grace> m_graces;
     // Indicates whether the last grace note/chord was accented
     bool m_accentedGraceNote;
-    // The current tempo
-    double m_currentTempo;
+    // The current measure, which holds the tempo map
+    const Measure *m_currentMeasure;
     // The last (non grace) note
     Note *m_lastNote;
 };
@@ -296,7 +308,6 @@ public:
      * Setter and getter for properties
      */
     ///@{
-    void SetCurrentTempo(double tempo) { m_currentTempo = tempo; }
     const std::list<OctaveInfo> &GetOctaves() const { return m_octaves; }
     ///@}
 
@@ -304,7 +315,6 @@ public:
      * Functor interface
      */
     ///@{
-    FunctorCode VisitMeasure(const Measure *measure) override;
     FunctorCode VisitOctave(const Octave *octave) override;
     ///@}
 
@@ -315,8 +325,6 @@ private:
 public:
     //
 private:
-    // The current tempo
-    double m_currentTempo;
     // Octave info which is collected
     std::list<OctaveInfo> m_octaves;
 };
@@ -529,8 +537,8 @@ private:
     Fraction m_currentScoreTime;
     // Real time from the start of the piece to the previous barline in ms
     double m_currentRealTimeMilliseconds;
-    // The current tempo
-    double m_currentTempo;
+    // The current measure, which holds the tempo map
+    const Measure *m_currentMeasure;
     // Indicates whether cue notes should be included
     bool m_noCue;
     // The timemap

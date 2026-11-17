@@ -505,7 +505,6 @@ void Doc::ExportMIDI(smf::MidiFile *midiFile)
 
     // Capture information for MIDI generation, i.e. from control elements
     InitMIDIFunctor initMIDI;
-    initMIDI.SetCurrentTempo(tempo);
     this->Process(initMIDI);
 
     // We need to populate processing lists for processing the document by Layer (by Verse will not be used)
